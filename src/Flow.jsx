@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   useNodesState,
@@ -81,8 +81,6 @@ function buildNodesFromTree(root) {
       data: { label: node.value, source: node },
     };
 
-    // node.item = item;
-
     nodes.push(item);
 
     // Move to next sibling
@@ -151,6 +149,19 @@ function chooseMaxSum(nodeValue, lChild, rChild) {
   return nodeValue + Math.max(lMax, rMax);
 }
 
+function chooseMinSum(nodeValue, lChild, rChild) {
+  if (lChild == null && rChild == null) return nodeValue;
+  if (lChild == null)
+    return nodeValue + calculateNodeValue(rChild, chooseMinSum);
+  if (rChild == null)
+    return nodeValue + calculateNodeValue(lChild, chooseMinSum);
+
+  let lMin = calculateNodeValue(lChild, chooseMinSum);
+  let rMin = calculateNodeValue(rChild, chooseMinSum);
+
+  return nodeValue + Math.min(lMin, rMin);
+}
+
 function relabelNodes(nodes) {
   for (let i = 0; i < nodes.length; i++) {
     let node = nodes[i];
@@ -162,65 +173,146 @@ function relabelNodes(nodes) {
   }
 }
 
-const max = 3;
-const depth = 3;
-const root = {
-  value: Math.floor(Math.random() * max + 1),
-};
-let valueCount = (depth / 2) * (1 + depth);
-let values = [];
+function buildValues(depth, max) {
+  let valueCount = (depth / 2) * (1 + depth);
+  let values = [];
 
-for (let i = 0; i < valueCount - 1; i++) {
-  values.push(Math.floor(Math.random() * max + 1));
+  for (let i = 0; i < valueCount; i++) {
+    values.push(Math.floor(Math.random() * max + 1));
+  }
+  return values;
 }
 
-buildTree(2, values, root);
+const defaultMaxValue = 3;
+const defaultDepth = 3;
+const defaultValues = buildValues(defaultDepth, defaultMaxValue);
+let work = defaultValues.slice();
+const root = {
+  value: work.shift(),
+};
+
+buildTree(2, work, root);
 
 const initialNodes = buildNodesFromTree(root);
 const initialEdges = buildEdges(initialNodes);
 console.log(initialNodes);
 console.log(initialEdges);
 
-export default function Flow({ depth, max }) {
+export default function Flow() {
   const [nodes, setNodes, onNodesChange] =
     useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] =
     useEdgesState(initialEdges);
-  // const onConnect = useCallback(
-  //   (params) => setEdges((els) => addEdge(params, els)),
-  //   []
-  // );
+  const [depth, setDepth] = useState(3);
+  const [max, setMax] = useState(3);
+  const [chooser, setChooser] = useState('maxSum');
+  const [values, setValues] = useState(defaultValues);
 
-  let root = {
-    value: Math.floor(Math.random() * max + 1),
+  useEffect(() => {
+    calculateNodeValue(root, chooseMaxSum);
+    relabelNodes(initialNodes);
+  }, []);
+
+  const updateNodes = () => {
+    let temp = values.slice();
+    const root = {
+      value: temp.shift(),
+    };
+
+    buildTree(2, temp, root);
+
+    let newNodes = buildNodesFromTree(root);
+    let newEdges = buildEdges(newNodes);
+
+    calculateNodeValue(
+      root,
+      chooser === 'maxSum' ? chooseMaxSum : chooseMinSum
+    );
+
+    relabelNodes(newNodes);
+    setNodes(newNodes);
+    setEdges(newEdges);
   };
-  let valueCount = (depth / 2) * (1 + depth);
-  let values = [];
-
-  for (let i = 0; i < valueCount - 1; i++) {
-    values.push(Math.floor(Math.random() * max + 1));
-  }
-
-  buildTree(2, values, root);
-
-  const initialNodes = buildNodesFromTree(root);
-  const initialEdges = buildEdges(initialNodes);
-
-  calculateNodeValue(root, chooseMaxSum);
-  relabelNodes(initialNodes);
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      <ReactFlowProvider>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          // onConnect={onConnect}
-          fitView
+    <div>
+      <p>
+        <label>
+          Depth:
+          <input
+            type="text"
+            name="depth"
+            onChange={(e) => {
+              let n = Number(e.target.value);
+              setDepth(n);
+              let newValues = buildValues(n, max);
+              setValues(newValues);
+              // updateNodes(newValues, chooser);
+            }}
+            value={depth}
+          />
+        </label>
+        <label>
+          Max Value:
+          <input
+            type="text"
+            name="maxValue"
+            onChange={(e) => {
+              let n = Number(e.target.value);
+              setMax(n);
+              let newValues = buildValues(depth, n);
+              setValues(newValues);
+              // updateNodes(newValues, chooser);
+            }}
+            value={max}
+          />
+        </label>
+      </p>
+      <p>
+        <input
+          type="radio"
+          value="maxSum"
+          name="chooser"
+          checked={chooser === 'maxSum'}
+          onChange={(e) => {
+            setChooser('maxSum');
+            // updateNodes(values, chooseMaxSum);
+          }}
         />
-      </ReactFlowProvider>
+        Max Sum
+        <input
+          type="radio"
+          value="minSum"
+          name="chooser"
+          checked={chooser === 'minSum'}
+          onChange={(e) => {
+            setChooser('minSum');
+            // updateNodes(values, chooseMinSum);
+          }}
+        />
+        Min Value
+      </p>
+      <p>
+        <button
+        onClick={() =>{
+          updateNodes();
+        }}
+        >Calculate</button>
+
+      </p>
+
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            // onConnect={onConnect}
+            fitView
+          />
+        </ReactFlowProvider>
+      </div>
     </div>
   );
 }
