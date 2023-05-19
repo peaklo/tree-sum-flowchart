@@ -65,12 +65,12 @@ function buildTree(depth, values, base) {
   }
 }
 
-function buildNodesFromTree(root, width=1000) {
+function buildNodesFromTree(root, nodeWidth=70, padding=10) {
   let id = 0;
   let currentDepth = 1;
   let nodes = [];
   let y = 0;
-  let xIncrement = width/(currentDepth+1);
+  let yIncrement = 60;
   let node = root;
 
   let maxDepth = 1; 
@@ -78,13 +78,15 @@ function buildNodesFromTree(root, width=1000) {
     maxDepth++;
     node = node.lChild;
   }
-  console.log("max depth: " + maxDepth);
   node = root;
 
-  let xOffset = width/maxDepth;
-  let xPos = xIncrement - xOffset;
+  // Leave 10 gap between elements
+  let xIncrement = nodeWidth + padding;
+  let maxWidth = (maxDepth * nodeWidth) + ((maxDepth+1)*padding);
+  let lineWidth = (currentDepth * nodeWidth) + ((currentDepth+1)*padding);
+  let xPos = maxWidth - (lineWidth/2);
+
   console.log("Xpos: " + xPos);
-  console.log("Offset: " + xOffset);
 
   while (node != null) {
     id++;
@@ -109,10 +111,10 @@ function buildNodesFromTree(root, width=1000) {
       }
       // Advance to the next row
       node = node.lChild;
-      y += 75;
+      y += yIncrement;
       currentDepth++;
-      xIncrement = width/(currentDepth+1);
-      xPos = xIncrement - xOffset;
+      lineWidth = (currentDepth * nodeWidth) + ((currentDepth+1)*padding);
+      xPos = maxWidth - (lineWidth/2);
       console.log("Xpos: " + xPos);
     }
   }
@@ -225,7 +227,6 @@ export default function Flow() {
   const [max, setMax] = useState(3);
   const [chooser, setChooser] = useState('maxSum');
   const [values, setValues] = useState(defaultValues);
-  const reactFlowInstance = useReactFlow();
 
   useEffect(() => {
     calculateNodeValue(root, chooseMaxSum);
@@ -251,8 +252,6 @@ export default function Flow() {
     relabelNodes(newNodes);
     setNodes(newNodes);
     setEdges(newEdges);
-    // reactFlowInstance.fitView();
-    fitView()
   };
 
   return (
