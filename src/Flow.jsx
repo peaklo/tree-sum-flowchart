@@ -3,6 +3,7 @@ import ReactFlow, {
   ReactFlowProvider,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   addEdge,
   Controls,
 } from 'reactflow';
@@ -108,7 +109,7 @@ function buildNodesFromTree(root, width=1000) {
       }
       // Advance to the next row
       node = node.lChild;
-      y += 100;
+      y += 75;
       currentDepth++;
       xIncrement = width/(currentDepth+1);
       xPos = xIncrement - xOffset;
@@ -224,6 +225,7 @@ export default function Flow() {
   const [max, setMax] = useState(3);
   const [chooser, setChooser] = useState('maxSum');
   const [values, setValues] = useState(defaultValues);
+  const reactFlowInstance = useReactFlow();
 
   useEffect(() => {
     calculateNodeValue(root, chooseMaxSum);
@@ -249,6 +251,8 @@ export default function Flow() {
     relabelNodes(newNodes);
     setNodes(newNodes);
     setEdges(newEdges);
+    // reactFlowInstance.fitView();
+    fitView()
   };
 
   return (
@@ -315,11 +319,9 @@ export default function Flow() {
           updateNodes();
         }}
         >Calculate</button>
-
       </p>
 
-      <div style={{ width: '100vw', height: '100vh' }}>
-        <ReactFlowProvider>
+      <div style={{ width: '90vw', height: '80vh' }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -327,8 +329,9 @@ export default function Flow() {
             onEdgesChange={onEdgesChange}
             // onConnect={onConnect}
             fitView
-          />
-        </ReactFlowProvider>
+          >
+            <Controls />
+            </ReactFlow>
       </div>
     </div>
   );
