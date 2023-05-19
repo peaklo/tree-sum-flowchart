@@ -150,21 +150,26 @@ function buildEdges(nodes) {
   return edges;
 }
 
-function calculateNodeValue(node, chooser) {
-  if (node.calculated == undefined)
-    node.calculated = chooser(node.value, node.lChild, node.rChild);
+function calculateNodeValue(node, chooser, saveCalculation=true) {
+  if (node.calculated == undefined){
+    let value = chooser(node.value, node.lChild, node.rChild, saveCalculation);
+
+    if (saveCalculation)
+      node.calculated = value;
+    else return value;
+  }
   return node.calculated;
 }
 
-function chooseMaxSum(nodeValue, lChild, rChild) {
+function chooseMaxSum(nodeValue, lChild, rChild, saveCalculation) {
   if (lChild == null && rChild == null) return nodeValue;
   if (lChild == null)
-    return nodeValue + calculateNodeValue(rChild, chooseMaxSum);
+    return nodeValue + calculateNodeValue(rChild, chooseMaxSum, saveCalculation);
   if (rChild == null)
-    return nodeValue + calculateNodeValue(lChild, chooseMaxSum);
+    return nodeValue + calculateNodeValue(lChild, chooseMaxSum, saveCalculation);
 
-  let lMax = calculateNodeValue(lChild, chooseMaxSum);
-  let rMax = calculateNodeValue(rChild, chooseMaxSum);
+  let lMax = calculateNodeValue(lChild, chooseMaxSum, saveCalculation);
+  let rMax = calculateNodeValue(rChild, chooseMaxSum, saveCalculation);
 
   return nodeValue + Math.max(lMax, rMax);
 }
@@ -172,12 +177,12 @@ function chooseMaxSum(nodeValue, lChild, rChild) {
 function chooseMinSum(nodeValue, lChild, rChild) {
   if (lChild == null && rChild == null) return nodeValue;
   if (lChild == null)
-    return nodeValue + calculateNodeValue(rChild, chooseMinSum);
+    return nodeValue + calculateNodeValue(rChild, chooseMinSum, saveCalculation);
   if (rChild == null)
-    return nodeValue + calculateNodeValue(lChild, chooseMinSum);
+    return nodeValue + calculateNodeValue(lChild, chooseMinSum, saveCalculation);
 
-  let lMin = calculateNodeValue(lChild, chooseMinSum);
-  let rMin = calculateNodeValue(rChild, chooseMinSum);
+  let lMin = calculateNodeValue(lChild, chooseMinSum, saveCalculation);
+  let rMin = calculateNodeValue(rChild, chooseMinSum, saveCalculation);
 
   return nodeValue + Math.min(lMin, rMin);
 }
@@ -228,15 +233,16 @@ export default function Flow() {
   const [chooser, setChooser] = useState('maxSum');
   const [values, setValues] = useState(defaultValues);
   const [elapsed, setElapsed] = useState(0);
+  const [saveCalculations, setSaveCalculations] = useState(true);
 
   useEffect(() => {
     let startTime = new Date();
-    calculateNodeValue(root, chooseMaxSum);
+    calculateNodeValue(root, chooseMaxSum, saveCalculations);
     setElapsed(new Date() - startTime);
     relabelNodes(initialNodes);
   }, []);
 
-  const generateNodes = (recalculate=false) => {
+  const generateNodes = () => {
     let temp = values.slice();
     const root = {
       value: temp.shift(),
@@ -247,10 +253,10 @@ export default function Flow() {
     let newNodes = buildNodesFromTree(root);
     let newEdges = buildEdges(newNodes);
 
-    if (recalculate)
-    calculateNodeValue(
+    root.calculated = calculateNodeValue(
       root,
-      chooser === 'maxSum' ? chooseMaxSum : chooseMinSum
+      chooser === 'maxSum' ? chooseMaxSum : chooseMinSum,
+      saveCalculations 
     );
 
     relabelNodes(newNodes);
@@ -290,6 +296,29 @@ export default function Flow() {
           />
         </label>
       </p>
+      <p>
+        <input
+          type="radio"
+          value={saveCalculations}
+          name="saveCalc"
+          checked={saveCalculations === true}
+          onChange={(e) => {
+            setSaveCalculations(true);
+          }}
+        />
+        Save Calculations
+        <input
+          type="radio"
+          value={false}
+          name="saveCalc"
+          checked={saveCalculations === false}
+          onChange={(e) => {
+            setSaveCalculations(false);
+          }}
+        />
+        Discard
+      </p>
+
       <p>
         <input
           type="radio"
