@@ -188,7 +188,7 @@ function relabelNodes(nodes) {
     nodes[i].data.label =
       node.data.source.value +
       ' (' +
-      nodes[i].data.source.calculated +
+      (nodes[i].data.source.calculated ?? 0) +
       ')';
   }
 }
@@ -227,13 +227,16 @@ export default function Flow() {
   const [max, setMax] = useState(3);
   const [chooser, setChooser] = useState('maxSum');
   const [values, setValues] = useState(defaultValues);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
+    let startTime = new Date();
     calculateNodeValue(root, chooseMaxSum);
+    setElapsed(new Date() - startTime);
     relabelNodes(initialNodes);
   }, []);
 
-  const updateNodes = () => {
+  const generateNodes = (recalculate=false) => {
     let temp = values.slice();
     const root = {
       value: temp.shift(),
@@ -244,6 +247,7 @@ export default function Flow() {
     let newNodes = buildNodesFromTree(root);
     let newEdges = buildEdges(newNodes);
 
+    if (recalculate)
     calculateNodeValue(
       root,
       chooser === 'maxSum' ? chooseMaxSum : chooseMinSum
@@ -267,7 +271,6 @@ export default function Flow() {
               setDepth(n);
               let newValues = buildValues(n, max);
               setValues(newValues);
-              // updateNodes(newValues, chooser);
             }}
             value={depth}
           />
@@ -282,7 +285,6 @@ export default function Flow() {
               setMax(n);
               let newValues = buildValues(depth, n);
               setValues(newValues);
-              // updateNodes(newValues, chooser);
             }}
             value={max}
           />
@@ -296,7 +298,6 @@ export default function Flow() {
           checked={chooser === 'maxSum'}
           onChange={(e) => {
             setChooser('maxSum');
-            // updateNodes(values, chooseMaxSum);
           }}
         />
         Max Sum
@@ -307,7 +308,6 @@ export default function Flow() {
           checked={chooser === 'minSum'}
           onChange={(e) => {
             setChooser('minSum');
-            // updateNodes(values, chooseMinSum);
           }}
         />
         Min Value
@@ -315,9 +315,19 @@ export default function Flow() {
       <p>
         <button
         onClick={() =>{
-          updateNodes();
+          setElapsed(0);
+          generateNodes();
+        }}
+        >Generate</button>
+        <button
+        onClick={() =>{
+          let startTime = new Date();          
+          generateNodes(true);
+          let endTime = new Date();
+          setElapsed(endTime - startTime);
         }}
         >Calculate</button>
+        Calculated in {elapsed} ms
       </p>
 
       <div style={{ width: '90vw', height: '80vh' }}>
@@ -326,7 +336,7 @@ export default function Flow() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            // onConnect={onConnect}
+            nodesDraggable={false}
             fitView
           >
             <Controls />
