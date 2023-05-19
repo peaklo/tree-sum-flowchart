@@ -234,6 +234,7 @@ export default function Flow() {
   const [values, setValues] = useState(defaultValues);
   const [elapsed, setElapsed] = useState(0);
   const [saveCalculations, setSaveCalculations] = useState(true);
+  const reactFlowInstance = useReactFlow();
 
   useEffect(() => {
     let startTime = new Date();
@@ -262,6 +263,7 @@ export default function Flow() {
     relabelNodes(newNodes);
     setNodes(newNodes);
     setEdges(newEdges);
+    setTimeout(reactFlowInstance.fitView,2);
   };
 
   return (
